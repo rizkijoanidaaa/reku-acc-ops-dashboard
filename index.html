@@ -6,557 +6,366 @@
 <title>Account Ops Dashboard — Reku · Juni 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  :root {
-    --bg: #F7F6F3;
-    --surface: #FFFFFF;
-    --surface2: #F0EEE9;
-    --border: rgba(0,0,0,0.08);
-    --border2: rgba(0,0,0,0.14);
-    --text: #1A1916;
-    --muted: #6B6A66;
-    --hint: #9B9A96;
-    --blue: #1B6FC8;
-    --blue-bg: #EBF3FC;
-    --blue-text: #0C4A8C;
-    --green: #157A52;
-    --green-bg: #E6F4EE;
-    --green-text: #0B5237;
-    --amber: #9A6010;
-    --amber-bg: #FDF3E0;
-    --amber-text: #6B3F08;
-    --red: #B83232;
-    --red-bg: #FCEAEA;
-    --red-text: #7A1F1F;
-    --radius: 10px;
-    --radius-sm: 6px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #18181A;
-      --surface: #222224;
-      --surface2: #2A2A2C;
-      --border: rgba(255,255,255,0.08);
-      --border2: rgba(255,255,255,0.14);
-      --text: #EEECEA;
-      --muted: #9B9A96;
-      --hint: #6B6A66;
-      --blue: #5BA3F0;
-      --blue-bg: #0C2A44;
-      --blue-text: #9FC8F5;
-      --green: #3DC48A;
-      --green-bg: #082C1C;
-      --green-text: #7ADCB0;
-      --amber: #F0A830;
-      --amber-bg: #2E1C04;
-      --amber-text: #F5C870;
-      --red: #E06060;
-      --red-bg: #2C0C0C;
-      --red-text: #F0A0A0;
-    }
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; }
-  a { color: var(--blue); text-decoration: none; }
-
-  /* === LAYOUT === */
-  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
-  .topbar-brand { display: flex; align-items: center; gap: 10px; }
-  .topbar-logo { width: 28px; height: 28px; background: var(--text); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-  .topbar-logo svg { width: 16px; height: 16px; fill: var(--bg); }
-  .topbar-title { font-size: 14px; font-weight: 600; color: var(--text); }
-  .topbar-sub { font-size: 12px; color: var(--muted); }
-  .topbar-right { display: flex; align-items: center; gap: 8px; }
-  .chip { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
-  .chip-blue { background: var(--blue-bg); color: var(--blue-text); }
-  .chip-green { background: var(--green-bg); color: var(--green-text); }
-  .chip-amber { background: var(--amber-bg); color: var(--amber-text); }
-  .chip-red { background: var(--red-bg); color: var(--red-text); }
-
-  .page { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
-
-  /* === TABS === */
-  .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--radius); padding: 4px; margin-bottom: 24px; }
-  .tab { flex: 1; text-align: center; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border: none; background: transparent; transition: all .15s; }
-  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .tab:hover:not(.active) { color: var(--text); }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* === CARDS === */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; }
-  .card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
-
-  /* === METRICS === */
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
-  .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
-  .metric-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
-  .metric-sub { font-size: 11px; color: var(--hint); margin-top: 4px; }
-  .metric-accent { border-top: 3px solid var(--blue); }
-  .metric-accent-green { border-top: 3px solid var(--green); }
-  .metric-accent-amber { border-top: 3px solid var(--amber); }
-  .metric-accent-red { border-top: 3px solid var(--red); }
-
-  /* === TABLE === */
-  .tbl-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { font-size: 11px; font-weight: 600; color: var(--muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border2); white-space: nowrap; }
-  td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface2); }
-  .td-num { font-weight: 600; }
-  .td-bold { font-weight: 600; }
-
-  /* === GRID === */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } .topbar-sub { display: none; } }
-
-  /* === PIC CARDS === */
-  .pic-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-  .pic-card { background: var(--surface2); border-radius: var(--radius); padding: 14px 16px; }
-  .pic-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
-  .pic-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
-  .pic-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); padding: 3px 0; }
-  .pic-total { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
-
-  /* === CHART === */
-  .chart-wrap { position: relative; width: 100%; }
-
-  /* === INSIGHT BAR === */
-  .insight-list { display: flex; flex-direction: column; gap: 10px; }
-  .insight { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-  .insight-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
-  .insight-text { font-size: 13px; color: var(--text); line-height: 1.5; }
-  .insight-text strong { font-weight: 600; }
-  .insight.warn { background: var(--amber-bg); border-color: transparent; }
-  .insight.ok { background: var(--green-bg); border-color: transparent; }
-  .insight.info { background: var(--blue-bg); border-color: transparent; }
-
-  /* === FOOTER === */
-  .footer { text-align: center; font-size: 11px; color: var(--hint); margin-top: 40px; }
-
-  /* === BAR === */
-  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .bar-label { font-size: 12px; color: var(--muted); width: 120px; flex-shrink: 0; text-align: right; }
-  .bar-track { flex: 1; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 4px; }
-  .bar-val { font-size: 12px; font-weight: 600; color: var(--text); width: 32px; }
-
-  /* legend */
-  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
-
-  .section-divider { height: 1px; background: var(--border); margin: 24px 0; }
-  .status-badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+:root{--bg:#F7F6F3;--surface:#fff;--surface2:#F0EEE9;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.14);--text:#1A1916;--muted:#6B6A66;--hint:#9B9A96;--blue:#1B6FC8;--blue-bg:#EBF3FC;--blue-t:#0C4A8C;--green:#157A52;--green-bg:#E6F4EE;--green-t:#0B5237;--amber:#9A6010;--amber-bg:#FDF3E0;--amber-t:#6B3F08;--red:#B83232;--r:10px;--rs:6px}
+@media(prefers-color-scheme:dark){:root{--bg:#18181A;--surface:#222224;--surface2:#2A2A2C;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);--text:#EEECEA;--muted:#9B9A96;--hint:#6B6A66;--blue:#5BA3F0;--blue-bg:#0C2A44;--blue-t:#9FC8F5;--green:#3DC48A;--green-bg:#082C1C;--green-t:#7ADCB0;--amber:#F0A830;--amber-bg:#2E1C04;--amber-t:#F5C870;--red:#E06060}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:14px;font-weight:600}.topbar-sub{font-size:12px;color:var(--muted)}
+.chip{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px}
+.chip-blue{background:var(--blue-bg);color:var(--blue-t)}.chip-green{background:var(--green-bg);color:var(--green-t)}.chip-amber{background:var(--amber-bg);color:var(--amber-t)}
+.page{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
+.tabs{display:flex;gap:4px;background:var(--surface2);border-radius:var(--r);padding:4px;margin-bottom:24px}
+.tab{flex:1;text-align:center;padding:8px 12px;border-radius:var(--rs);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:transparent;transition:all .15s}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.metric-value{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.metric-sub{font-size:11px;color:var(--hint);margin-top:4px}
+.metric-accent{border-top:3px solid var(--blue)}.metric-accent-g{border-top:3px solid var(--green)}.metric-accent-a{border-top:3px solid var(--amber)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:600;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border2);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--surface2)}
+.td-num{font-weight:600}.td-bold{font-weight:600}
+.badge-green{display:inline-block;background:var(--green-bg);color:var(--green-t);font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.grid-2{grid-template-columns:1fr}.topbar-sub{display:none}}
+.pic-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.pic-card{background:var(--surface2);border-radius:var(--r);padding:14px 16px}
+.pic-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-bottom:10px}
+.pic-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px}
+.pic-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:3px 0}
+.pic-total{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+.chart-wrap{position:relative;width:100%}
+.insight-list{display:flex;flex-direction:column;gap:10px}
+.insight{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border)}
+.insight-text{font-size:13px;color:var(--text);line-height:1.5}.insight-text strong{font-weight:600}
+.insight.warn{background:var(--amber-bg);border-color:transparent}.insight.ok{background:var(--green-bg);border-color:transparent}.insight.info{background:var(--blue-bg);border-color:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+.footer{text-align:center;font-size:11px;color:var(--hint);margin-top:40px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-label{font-size:12px;color:var(--muted);width:120px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.bar-val{font-size:12px;font-weight:600;color:var(--text);width:32px}
 </style>
 </head>
 <body>
-
 <div class="topbar">
-  <div class="topbar-brand">
-    <div class="topbar-logo">
-      <svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:28px;height:28px;background:var(--text);border-radius:6px;display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--bg)"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
     </div>
-    <div>
-      <div class="topbar-title">Account Ops Dashboard</div>
-      <div class="topbar-sub">Reku · Juni 2026</div>
-    </div>
+    <div><div class="topbar-title">Account Ops Dashboard</div><div class="topbar-sub">Reku · Juni 2026</div></div>
   </div>
-  <div class="topbar-right">
-    <span class="chip chip-blue">Data s/d 9 Jun</span>
-    <span class="chip chip-green" id="sla-chip">SLA: 100%</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="chip chip-blue">Diperbarui: 9 Juni 2026</span>
+    <span class="chip chip-green">SLA: 100%</span>
   </div>
 </div>
 
 <div class="page">
-
-  <!-- TABS -->
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('escalated')">📋 Escalated Case</button>
-    <button class="tab" onclick="switchTab('email')">✉️ Reporting Email</button>
-    <button class="tab" onclick="switchTab('channel')">📡 Others Channel</button>
+    <button class="tab active" onclick="switchTab('escalated',this)">📋 Escalated Case</button>
+    <button class="tab" onclick="switchTab('email',this)">✉️ Reporting Email</button>
+    <button class="tab" onclick="switchTab('channel',this)">📡 Others Channel</button>
   </div>
 
-  <!-- ========== TAB: ESCALATED CASE ========== -->
+  <!-- ESCALATED -->
   <div id="tab-escalated" class="tab-content active">
-
     <div class="metrics">
-      <div class="metric metric-accent">
-        <div class="metric-label">Total Kasus</div>
-        <div class="metric-value">21</div>
-        <div class="metric-sub">s/d 9 Jun 2026</div>
-      </div>
-      <div class="metric metric-accent">
-        <div class="metric-label">Change Email</div>
-        <div class="metric-value">8</div>
-        <div class="metric-sub">0 SLA breach</div>
-      </div>
-      <div class="metric metric-accent-green">
-        <div class="metric-label">Update Data User</div>
-        <div class="metric-value">9</div>
-        <div class="metric-sub">0 SLA breach</div>
-      </div>
-      <div class="metric metric-accent-amber">
-        <div class="metric-label">Up Limit Transaksi</div>
-        <div class="metric-value">4</div>
-        <div class="metric-sub">0 SLA breach</div>
-      </div>
-      <div class="metric metric-accent-green">
-        <div class="metric-label">Overall Achievement</div>
-        <div class="metric-value">100%</div>
-        <div class="metric-sub">Target 95%</div>
-      </div>
+      <div class="metric metric-accent"><div class="metric-label">Total Kasus</div><div class="metric-value">12</div><div class="metric-sub">s/d 9 Juni 2026</div></div>
+      <div class="metric metric-accent"><div class="metric-label">Change Email</div><div class="metric-value">0</div><div class="metric-sub">0 SLA breach</div></div>
+      <div class="metric metric-accent-g"><div class="metric-label">Update Data User</div><div class="metric-value">6</div><div class="metric-sub">0 SLA breach</div></div>
+      <div class="metric metric-accent-a"><div class="metric-label">Up Limit Transaksi</div><div class="metric-value">6</div><div class="metric-sub">0 SLA breach</div></div>
+      <div class="metric metric-accent-g"><div class="metric-label">Overall Achievement</div><div class="metric-value">100%</div><div class="metric-sub">Target 95%</div></div>
     </div>
-
     <div class="card">
-      <div class="card-title">Volume kasus harian — semua tipe</div>
-      <div class="chart-wrap" style="height:220px">
-        <canvas id="escChart" role="img" aria-label="Bar chart escalated case harian per tipe Juni 2026">Kasus harian escalated per tipe</canvas>
-      </div>
+      <div class="card-title">Volume kasus harian</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="escChart" role="img" aria-label="Escalated case harian"></canvas></div>
       <div class="legend">
         <span><span class="legend-dot" style="background:#1B6FC8"></span>Change Email</span>
         <span><span class="legend-dot" style="background:#157A52"></span>Update Data User</span>
         <span><span class="legend-dot" style="background:#9A6010"></span>Up Limit Transaksi</span>
       </div>
     </div>
-
     <div class="grid-2">
       <div class="card">
-        <div class="card-title">Change Email — detail harian</div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Tanggal</th><th>Kasus</th><th>Breach</th><th>Achievement</th></tr></thead>
-            <tbody>
-              <tr><td>1 Jun</td><td class="td-num">2</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>2 Jun</td><td class="td-num">2</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>3 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>4 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-              <tr><td>5 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>6–7 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-              <tr><td>8 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>9 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="card-title">Change Email</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Kasus</th><th>Breach</th><th>Ach.</th></tr></thead><tbody>
+      <tr>
+        <td>1 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>2 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>3 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>4 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>5 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>6 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>7 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>8 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>9 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr></tbody></table></div>
       </div>
-
       <div class="card">
-        <div class="card-title">Update Data User — detail harian</div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Tanggal</th><th>Kasus</th><th>Breach</th><th>Achievement</th></tr></thead>
-            <tbody>
-              <tr><td>1 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-              <tr><td>2 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>3 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-              <tr><td>4 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>5 Jun</td><td class="td-num">3</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>6 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>7 Jun</td><td class="td-num">3</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-              <tr><td>8 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="card-title">Update Data User</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Kasus</th><th>Breach</th><th>Ach.</th></tr></thead><tbody>
+      <tr>
+        <td>1 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>2 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>3 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>4 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>5 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>6 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>7 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>8 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>9 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr></tbody></table></div>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">Up Limit Transaksi User — detail harian</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Tanggal</th><th>Kasus</th><th>Breach</th><th>Achievement</th></tr></thead>
-          <tbody>
-            <tr><td>1 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-            <tr><td>2 Jun</td><td class="td-num">2</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-            <tr><td>3–5 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-            <tr><td>6 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-            <tr><td>7–8 Jun</td><td class="td-num">0</td><td>—</td><td>—</td></tr>
-            <tr><td>9 Jun</td><td class="td-num">1</td><td>0</td><td><span class="status-badge chip-green">100%</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Insight</div>
-      <div class="insight-list">
-        <div class="insight ok"><span class="insight-icon">✅</span><div class="insight-text"><strong>Zero breach sepanjang Juni.</strong> Semua 21 kasus selesai dalam SLA — achievement konsisten 100% di semua tipe kasus.</div></div>
-        <div class="insight info"><span class="insight-icon">📌</span><div class="insight-text"><strong>Update Data User paling aktif</strong> dengan 9 kasus. Lonjakan terjadi di 5 Jun (3 kasus) dan 7 Jun (3 kasus) — perlu dipantau apakah ada pola tertentu.</div></div>
-        <div class="insight info"><span class="insight-icon">📌</span><div class="insight-text"><strong>Up Limit Transaksi paling sedikit</strong> (4 kasus) — menunjukkan volume permintaan upgrade limit masih terkendali.</div></div>
-      </div>
+      <div class="card-title">Up Limit Transaksi User</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Kasus</th><th>Breach</th><th>Achievement</th></tr></thead><tbody>
+      <tr>
+        <td>1 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>2 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>3 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>4 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>5 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>6 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>7 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>8 Jun</td>
+        <td class="td-num">1</td>
+        <td>0</td>
+        <td><span class="badge-green">100%</span></td>
+      </tr>
+      <tr>
+        <td>9 Jun</td>
+        <td class="td-num">0</td>
+        <td>0</td>
+        <td>—</td>
+      </tr></tbody></table></div>
     </div>
   </div>
 
-  <!-- ========== TAB: REPORTING EMAIL ========== -->
+  <!-- EMAIL -->
   <div id="tab-email" class="tab-content">
-
     <div class="metrics">
-      <div class="metric metric-accent">
-        <div class="metric-label">Total Email Terkirim</div>
-        <div class="metric-value">193</div>
-        <div class="metric-sub">1–9 Jun 2026</div>
-      </div>
-      <div class="metric metric-accent">
-        <div class="metric-label">Email EDD</div>
-        <div class="metric-value">163</div>
-        <div class="metric-sub">84.5% dari total</div>
-      </div>
-      <div class="metric metric-accent-green">
-        <div class="metric-label">Email Warning</div>
-        <div class="metric-value">20</div>
-        <div class="metric-sub">10.4% dari total</div>
-      </div>
-      <div class="metric metric-accent-amber">
-        <div class="metric-label">Berita Acara</div>
-        <div class="metric-value">12</div>
-        <div class="metric-sub">6.2% dari total</div>
-      </div>
+      <div class="metric metric-accent"><div class="metric-label">Total Email</div><div class="metric-value">250</div><div class="metric-sub">semua tipe</div></div>
+      <div class="metric metric-accent"><div class="metric-label">Email EDD</div><div class="metric-value">216</div><div class="metric-sub">86% dari total</div></div>
+      <div class="metric metric-accent-g"><div class="metric-label">Email Warning</div><div class="metric-value">19</div><div class="metric-sub">8% dari total</div></div>
+      <div class="metric metric-accent-a"><div class="metric-label">Berita Acara</div><div class="metric-value">15</div><div class="metric-sub">6% dari total</div></div>
     </div>
-
     <div class="card">
-      <div class="card-title">Grafis Distribusi Email Account Ops</div>
-      <div class="chart-wrap" style="height:230px">
-        <canvas id="emailChart" role="img" aria-label="Stacked bar chart email harian per tipe Juni 2026">Grafis Distribusi Email Account Ops</canvas>
-      </div>
+      <div class="card-title">Volume email harian per tipe</div>
+      <div class="chart-wrap" style="height:230px"><canvas id="emailChart" role="img" aria-label="Volume email harian"></canvas></div>
       <div class="legend">
-        <span><span class="legend-dot" style="background:#1B6FC8"></span>Email EDD</span>
-        <span><span class="legend-dot" style="background:#157A52"></span>Email Warning</span>
+        <span><span class="legend-dot" style="background:#1B6FC8"></span>EDD</span>
+        <span><span class="legend-dot" style="background:#157A52"></span>Warning</span>
         <span><span class="legend-dot" style="background:#9A6010"></span>Berita Acara</span>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">Status pengiriman per tipe email</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Tipe</th><th>Waiting Reply</th><th>Waiting User</th><th>Solved</th><th>Total</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Email EDD</td>
-              <td>95 <span class="chip chip-amber" style="margin-left:4px">58.3%</span></td>
-              <td>68 <span class="chip chip-blue" style="margin-left:4px">41.7%</span></td>
-              <td>0</td>
-              <td class="td-bold">163</td>
-            </tr>
-            <tr>
-              <td>Email Warning</td>
-              <td>2</td>
-              <td>0</td>
-              <td>18 <span class="chip chip-green" style="margin-left:4px">90%</span></td>
-              <td class="td-bold">20</td>
-            </tr>
-            <tr>
-              <td>Berita Acara</td>
-              <td>9</td>
-              <td>0</td>
-              <td>3</td>
-              <td class="td-bold">12</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <div class="card-title">Status pengiriman</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Tipe</th><th>Waiting Reply</th><th>Waiting User</th><th>Solved</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>Email EDD</td><td>160</td><td>65</td><td>0</td><td class="td-bold">216</td></tr>
+        <tr><td>Email Warning</td><td>2</td><td>0</td><td>25</td><td class="td-bold">19</td></tr>
+        <tr><td>Berita Acara</td><td>9</td><td>0</td><td>3</td><td class="td-bold">15</td></tr>
+      </tbody></table></div>
     </div>
-
     <div class="card">
-      <div class="card-title">Pengiriman Email Tiap PIC</div>
+      <div class="card-title">Beban kerja per PIC</div>
       <div class="pic-list">
-        <div class="pic-card">
-          <div class="pic-avatar" style="background:var(--blue-bg);color:var(--blue-text)">GR</div>
-          <div class="pic-name">Gerdy R. Yusgeri</div>
-          <div class="pic-row"><span>Email EDD</span><span class="td-num">68</span></div>
-          <div class="pic-row"><span>Email Warning</span><span class="td-num">5</span></div>
-          <div class="pic-row"><span>Berita Acara</span><span class="td-num">1</span></div>
-          <div class="pic-total"><span>Total</span><span>74</span></div>
-        </div>
-        <div class="pic-card">
-          <div class="pic-avatar" style="background:var(--green-bg);color:var(--green-text)">RJ</div>
-          <div class="pic-name">Rizki Joanida</div>
-          <div class="pic-row"><span>Email EDD</span><span class="td-num">55</span></div>
-          <div class="pic-row"><span>Email Warning</span><span class="td-num">6</span></div>
-          <div class="pic-row"><span>Berita Acara</span><span class="td-num">4</span></div>
-          <div class="pic-total"><span>Total</span><span>65</span></div>
-        </div>
-        <div class="pic-card">
-          <div class="pic-avatar" style="background:var(--amber-bg);color:var(--amber-text)">FS</div>
-          <div class="pic-name">Fajar S. Pamungkas</div>
-          <div class="pic-row"><span>Email EDD</span><span class="td-num">40</span></div>
-          <div class="pic-row"><span>Email Warning</span><span class="td-num">9</span></div>
-          <div class="pic-row"><span>Berita Acara</span><span class="td-num">7</span></div>
-          <div class="pic-total"><span>Total</span><span>56</span></div>
-        </div>
+      <div class="pic-card">
+        <div class="pic-avatar" style="background:#1B6FC822;color:#1B6FC8">GR</div>
+        <div class="pic-name">Gerdy Rachmadan Yusgeri</div>
+        <div class="pic-row"><span>EDD</span><span>84</span></div>
+        <div class="pic-row"><span>Warning</span><span>8</span></div>
+        <div class="pic-row"><span>Berita Acara</span><span>3</span></div>
+        <div class="pic-total"><span>Total</span><span>95</span></div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Grafis Bar Pengiriman Email Tiap PIC</div>
-      <div style="margin-top:4px">
-        <div class="bar-row"><span class="bar-label">Gerdy</span><div class="bar-track"><div class="bar-fill" style="width:74%;background:#1B6FC8"></div></div><span class="bar-val">74</span></div>
-        <div class="bar-row"><span class="bar-label">Rizki</span><div class="bar-track"><div class="bar-fill" style="width:65%;background:#157A52"></div></div><span class="bar-val">65</span></div>
-        <div class="bar-row"><span class="bar-label">Fajar</span><div class="bar-track"><div class="bar-fill" style="width:56%;background:#9A6010"></div></div><span class="bar-val">56</span></div>
+      <div class="pic-card">
+        <div class="pic-avatar" style="background:#157A5222;color:#157A52">RJ</div>
+        <div class="pic-name">Rizki Joanida</div>
+        <div class="pic-row"><span>EDD</span><span>57</span></div>
+        <div class="pic-row"><span>Warning</span><span>7</span></div>
+        <div class="pic-row"><span>Berita Acara</span><span>2</span></div>
+        <div class="pic-total"><span>Total</span><span>66</span></div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Insight</div>
-      <div class="insight-list">
-        <div class="insight warn"><span class="insight-icon">⚠️</span><div class="insight-text"><strong>Lonjakan besar di 8 Jun:</strong> 68 Email EDD terkirim dalam satu hari — hampir 5× rata-rata harian. Perlu dipastikan kapasitas tim cukup saat batch serupa terjadi lagi.</div></div>
-        <div class="insight ok"><span class="insight-icon">✅</span><div class="insight-text"><strong>Email Warning resolve rate tinggi:</strong> 90% sudah Solved. Menunjukkan proses tindak lanjut warning berjalan efektif.</div></div>
-        <div class="insight info"><span class="insight-icon">📌</span><div class="insight-text"><strong>163 Email EDD belum ada yang Solved</strong> — semua masih menunggu balasan user. Perlu monitoring follow-up untuk email yang sudah &gt;3 hari tanpa respons.</div></div>
-        <div class="insight info"><span class="insight-icon">📌</span><div class="insight-text"><strong>Gerdy menanggung beban tertinggi</strong> (74 email), selisih 18 email vs Fajar. Pertimbangkan pemerataan distribusi jika volume EDD kembali melonjak.</div></div>
-      </div>
+      <div class="pic-card">
+        <div class="pic-avatar" style="background:#9A601022;color:#9A6010">FS</div>
+        <div class="pic-name">Fajar Surya Pamungkas</div>
+        <div class="pic-row"><span>EDD</span><span>75</span></div>
+        <div class="pic-row"><span>Warning</span><span>4</span></div>
+        <div class="pic-row"><span>Berita Acara</span><span>10</span></div>
+        <div class="pic-total"><span>Total</span><span>89</span></div>
+      </div></div>
     </div>
   </div>
 
-  <!-- ========== TAB: OTHERS CHANNEL ========== -->
+  <!-- CHANNEL -->
   <div id="tab-channel" class="tab-content">
-
     <div class="metrics">
-      <div class="metric metric-accent">
-        <div class="metric-label">Email EDD</div>
-        <div class="metric-value">113</div>
-        <div class="metric-sub">via Others Channel</div>
-      </div>
-      <div class="metric metric-accent-green">
-        <div class="metric-label">Email Warning</div>
-        <div class="metric-value">9</div>
-        <div class="metric-sub">+2 pada 9 Jun</div>
-      </div>
-      <div class="metric metric-accent-amber">
-        <div class="metric-label">Berita Acara</div>
-        <div class="metric-value">12</div>
-        <div class="metric-sub">via Others Channel</div>
-      </div>
-      <div class="metric metric-accent">
-        <div class="metric-label">Total Semua Channel</div>
-        <div class="metric-value">134</div>
-        <div class="metric-sub">s/d 8 Jun</div>
-      </div>
+      <div class="metric metric-accent"><div class="metric-label">Email EDD</div><div class="metric-value">173</div><div class="metric-sub">via Others Channel</div></div>
+      <div class="metric metric-accent-g"><div class="metric-label">Email Warning</div><div class="metric-value">17</div><div class="metric-sub">via Others Channel</div></div>
+      <div class="metric metric-accent-a"><div class="metric-label">Berita Acara</div><div class="metric-value">12</div><div class="metric-sub">via Others Channel</div></div>
+      <div class="metric metric-accent"><div class="metric-label">Total</div><div class="metric-value">202</div><div class="metric-sub">semua channel</div></div>
     </div>
-
     <div class="card">
       <div class="card-title">Volume per channel per hari</div>
-      <div class="chart-wrap" style="height:230px">
-        <canvas id="chanChart" role="img" aria-label="Stacked bar chart Others Channel per hari Juni 2026">Volume per channel per hari</canvas>
-      </div>
+      <div class="chart-wrap" style="height:230px"><canvas id="chanChart" role="img" aria-label="Others channel harian"></canvas></div>
       <div class="legend">
         <span><span class="legend-dot" style="background:#1B6FC8"></span>Email EDD</span>
         <span><span class="legend-dot" style="background:#157A52"></span>Email Warning</span>
         <span><span class="legend-dot" style="background:#9A6010"></span>Berita Acara</span>
       </div>
     </div>
-
-    <div class="card">
-      <div class="card-title">Rincian volume per channel per hari</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Channel</th><th>1 Jun</th><th>2 Jun</th><th>3 Jun</th><th>4 Jun</th><th>5 Jun</th><th>6 Jun</th><th>7 Jun</th><th>8 Jun</th><th>Total</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Email EDD</td>
-              <td>0</td><td>12</td><td>11</td><td>8</td><td>14</td><td>0</td><td>0</td>
-              <td style="font-weight:700;color:var(--red)">68</td>
-              <td class="td-bold">113</td>
-            </tr>
-            <tr>
-              <td>Email Warning</td>
-              <td>1</td><td>1</td><td>1</td><td>2</td><td>1</td><td>2</td><td>2</td><td>4</td>
-              <td class="td-bold">9 (+2)</td>
-            </tr>
-            <tr>
-              <td>Berita Acara</td>
-              <td>0</td><td>0</td><td>0</td><td>0</td>
-              <td style="font-weight:700;color:var(--amber)">10</td>
-              <td>0</td><td>0</td><td>2</td>
-              <td class="td-bold">12</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Porsi channel — rata-rata harian</div>
-      <div style="margin-top:4px">
-        <div class="bar-row"><span class="bar-label">Email EDD</span><div class="bar-track"><div class="bar-fill" style="width:84%;background:#1B6FC8"></div></div><span class="bar-val" style="width:50px">84%</span></div>
-        <div class="bar-row"><span class="bar-label">Berita Acara</span><div class="bar-track"><div class="bar-fill" style="width:9%;background:#9A6010"></div></div><span class="bar-val" style="width:50px">9%</span></div>
-        <div class="bar-row"><span class="bar-label">Email Warning</span><div class="bar-track"><div class="bar-fill" style="width:7%;background:#157A52"></div></div><span class="bar-val" style="width:50px">7%</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Insight</div>
-      <div class="insight-list">
-        <div class="insight warn"><span class="insight-icon">⚠️</span><div class="insight-text"><strong>8 Jun: lonjakan EDD 68 kasus</strong> — terbesar selama periode ini, terjadi dalam satu hari. Perlu identifikasi trigger (batch suspend, audit periodik, dll).</div></div>
-        <div class="insight info"><span class="insight-icon">📌</span><div class="insight-text"><strong>Berita Acara hanya muncul di 2 hari</strong> (5 Jun: 10, 8 Jun: 2). Pola ini kemungkinan hasil batch proses suspend atau teguran formal — bukan kasus harian rutin.</div></div>
-        <div class="insight ok"><span class="insight-icon">✅</span><div class="insight-text"><strong>Email Warning konsisten rendah</strong> (1–4 per hari) — indikator bahwa kasus yang naik ke level warning masih terkendali volumenya.</div></div>
-        <div class="insight info"><span class="insight-icon">📌</span><div class="insight-text"><strong>6–7 Jun nol EDD</strong> — kemungkinan hari libur atau cut-off proses. Perlu dicatat sebagai referensi pola mingguan.</div></div>
-      </div>
-    </div>
   </div>
 
-  <div class="footer">Account Ops · Reku · Dashboard diperbarui manual · Data per Juni 2026</div>
+  <div class="footer">Account Ops · Reku · Terakhir diperbarui: 9 Juni 2026</div>
 </div>
 
 <script>
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
 }
-
-const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-const grid = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-const tick = isDark ? '#888' : '#999';
-const baseOpts = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { stacked: true, ticks: { color: tick, font: { size: 11 } }, grid: { color: grid }, border: { display: false } },
-    y: { stacked: true, ticks: { color: tick, font: { size: 11 } }, grid: { color: grid }, border: { display: false } }
-  }
-};
-
-new Chart(document.getElementById('escChart'), {
-  type: 'bar',
-  data: {
-    labels: ['1','2','3','4','5','6','7','8','9'],
-    datasets: [
-      { label: 'Change Email', data: [2,2,1,0,1,0,0,1,1], backgroundColor: '#1B6FC8' },
-      { label: 'Update Data', data: [0,1,0,1,3,1,3,1,0], backgroundColor: '#157A52' },
-      { label: 'Up Limit', data: [0,2,0,0,0,1,0,0,1], backgroundColor: '#9A6010' }
-    ]
-  },
-  options: { ...baseOpts }
-});
-
-new Chart(document.getElementById('emailChart'), {
-  type: 'bar',
-  data: {
-    labels: ['1 Jun','2 Jun','3 Jun','4 Jun','5 Jun','6 Jun','7 Jun','8 Jun','9 Jun'],
-    datasets: [
-      { label: 'EDD', data: [12,29,17,20,23,0,0,68,0], backgroundColor: '#1B6FC8' },
-      { label: 'Warning', data: [0,2,0,3,1,3,3,4,2], backgroundColor: '#157A52' },
-      { label: 'Berita Acara', data: [0,0,1,0,10,0,0,2,0], backgroundColor: '#9A6010' }
-    ]
-  },
-  options: { ...baseOpts }
-});
-
-new Chart(document.getElementById('chanChart'), {
-  type: 'bar',
-  data: {
-    labels: ['1 Jun','2 Jun','3 Jun','4 Jun','5 Jun','6 Jun','7 Jun','8 Jun'],
-    datasets: [
-      { label: 'Email EDD', data: [0,12,11,8,14,0,0,68], backgroundColor: '#1B6FC8' },
-      { label: 'Email Warning', data: [1,1,1,2,1,2,2,4], backgroundColor: '#157A52' },
-      { label: 'Berita Acara', data: [0,0,0,0,10,0,0,2], backgroundColor: '#9A6010' }
-    ]
-  },
-  options: { ...baseOpts }
-});
+const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
+const grid=isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.06)';
+const tick=isDark?'#888':'#999';
+const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:tick,font:{size:11}},grid:{color:grid},border:{display:false}},y:{stacked:true,ticks:{color:tick,font:{size:11}},grid:{color:grid},border:{display:false}}}};
+new Chart(document.getElementById('escChart'),{type:'bar',data:{labels:['1 Jun','2 Jun','3 Jun','4 Jun','5 Jun','6 Jun','7 Jun','8 Jun','9 Jun'],datasets:[{label:'Change Email',data:[0,0,0,0,0,0,0,0,0],backgroundColor:'#1B6FC8'},{label:'Update Data',data:[1,1,1,0,1,0,0,1,1],backgroundColor:'#157A52'},{label:'Up Limit',data:[0,1,0,1,1,1,1,1,0],backgroundColor:'#9A6010'}]},options:{...base}});
+new Chart(document.getElementById('emailChart'),{type:'bar',data:{labels:['1 Jun','2 Jun','3 Jun','4 Jun','5 Jun','6 Jun','7 Jun','8 Jun','9 Jun'],datasets:[{label:'EDD',data:[12,28,16,21,14,0,0,65,60],backgroundColor:'#1B6FC8'},{label:'Warning',data:[0,2,0,3,1,3,3,4,3],backgroundColor:'#157A52'},{label:'Berita Acara',data:[0,0,1,0,10,0,0,2,2],backgroundColor:'#9A6010'}]},options:{...base}});
+new Chart(document.getElementById('chanChart'),{type:'bar',data:{labels:['1 Jun','2 Jun','3 Jun','4 Jun','5 Jun','6 Jun','7 Jun','8 Jun','9 Jun','10 Jun','11 Jun','12 Jun','13 Jun','14 Jun','15 Jun','16 Jun','17 Jun','18 Jun','19 Jun','20 Jun','21 Jun','22 Jun','23 Jun','24 Jun','25 Jun','26 Jun','27 Jun','28 Jun','29 Jun','30 Jun'],datasets:[{label:'EDD',data:[0,12,11,8,14,0,0,68,60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],backgroundColor:'#1B6FC8'},{label:'Warning',data:[1,1,1,2,1,2,2,4,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],backgroundColor:'#157A52'},{label:'Berita Acara',data:[0,0,0,0,10,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],backgroundColor:'#9A6010'}]},options:{...base}});
 </script>
 </body>
 </html>
